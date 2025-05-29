@@ -1,6 +1,108 @@
 #include <stdio.h>
+#include <string.h>
+#include <time.h>
+#include "freertos/FreeRTOS.h"
+#include "freertos/portmacro.h"
+#include "freertos/task.h"
+#include "esp_wifi.h"
+#include "esp_event.h"
+#include "esp_log.h"
+#include "esp_sntp.h"
+#include "esp_system.h"
+#include "esp_sleep.h"
+#include "nvs_flash.h"
+#include "driver/gpio.h"
+#include "esp_netif.h"
 
-void app_main(void)
-{
+#define WIFI_SSID "your-ssid"
+#define WIFI_PASS "your-password"
+#define LED_GPIO GPIO_NUM_2
+#define TAG "MAIN"
 
+static void connect_wifi() {
+    ESP_ERROR_CHECK(esp_netif_init());
+    ESP_ERROR_CHECK(esp_event_loop_create_default());
+
+    esp_netif_create_default_wifi_sta();
+
+    wifi_init_config_t wifi_config = WIFI_INIT_CONFIG_DEFAULT();
+    ESP_ERROR_CHECK(esp_wifi_init(&wifi_config));
+
+    wifi_config_t sta_config = {
+        .sta = {
+            .ssid = WIFI_SSID,
+            .password = WIFI_PASS,
+            .threshold.authmode = WIFI_AUTH_WPA2_PSK,
+        }
+    };
+
+    ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
+    ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &sta_config));
+    ESP_ERROR_CHECK(esp_wifi_start());
+    ESP_LOGI(TAG, "Connecting to Wi-Fi...");
+
+    ESP_ERROR_CHECK(esp_wifi_connect());
+
+    vTaskDelay(pdMS_TO_TICKS(5000));
+}
+
+static void obtain_time() {
+    esp_sntp_setoperatingmode(SNTP_OPMODE_POLL);
+    esp_sntp_setservername(0, "pool.ntp.org");
+    esp_sntp_init();
+
+    time_t now = 0;
+    struct tm timeinfo = { 0 };
+
+    while (timeinfo.tm_year < (2020 - 1900)) {
+        ESP_LOGI(TAG, "Waiting for time...");
+        time(&now);
+        localtime_r(&now, &timeinfo);
+        vTaskDelay(2000 / portTICK_PERIOD_MS);
+    }
+    ESP_LOGI(TAG, "Time obtained.");
+}
+
+static void blink_led(int times, int delay_ms) {
+    gpio_set_direction(LED_GPIO, GPIO_MODE_OUTPUT);
+    for (int i = 0; i < times; ++i) {
+        gpio_set_level(LED_GPIO, 1);
+        vTaskDelay(delay_ms / portTICK_PERIOD_MS);
+        gpio_set_level(LED_GPIO, 0);
+        vTaskDelay(delay_ms / portTICK_PERIOD_MS);
+    }
+}
+
+void app_main() {
+    ESP_ERROR_CHECK(nvs_flash_init());
+
+    if (!esp_sleep_get_wakeup_cause()) {
+        connect_wifi();
+        obtain_time();
+        esp_wifi_stop();
+    }
+
+    time_t now;
+    struct tm timeinfo;
+    time(&now);
+    localtime_r(&now, &timeinfo);
+
+    int minute = timeinfo.tm_min;
+    int hour = timeinfo.tm_hour;
+
+    if (minute % 15 == 0) {
+        blink_led(1, 300);
+    }
+
+    if (minute == 0) {
+        if (hour == 12) {
+            blink_led(12, 200);  // Noon chime - slower, more distine
+        } else {
+            blink_led(hour % 24 == 0 ? 24 : hour % 24, 100);  // Hourly blink - faster
+        }
+    }
+
+    ESP_LOGI(TAG, "Sleeping...");
+    esp_sleep_enable_timer_wakeup(60 * 1000000ULL);
+    esp_deep_sleep_start();
 }
