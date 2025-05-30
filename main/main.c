@@ -14,8 +14,10 @@
 #include "driver/gpio.h"
 #include "esp_netif.h"
 
-#define WIFI_SSID "your-ssid"
-#define WIFI_PASS "your-password"
+#include "sdkconfig.h"
+
+// Configuration for Wi-Fi credentials and blink delays at menuConfig
+
 #define LED_GPIO GPIO_NUM_2
 #define TAG "MAIN"
 
@@ -30,8 +32,8 @@ static void connect_wifi() {
 
     wifi_config_t sta_config = {
         .sta = {
-            .ssid = WIFI_SSID,
-            .password = WIFI_PASS,
+            .ssid = CONFIG_WIFI_SSID,
+            .password = CONFIG_WIFI_PASS,
             .threshold.authmode = WIFI_AUTH_WPA2_PSK,
         }
     };
@@ -92,13 +94,14 @@ void app_main() {
 
     if (minute % 15 == 0) {
         blink_led(1, 300);
+        // printf(">>>>>>>>>>> Chime at %02d:%02d <<<<<<<<<<\n", hour, minute);
     }
 
     if (minute == 0) {
         if (hour == 12) {
-            blink_led(12, 200);  // Noon chime - slower, more distine
+            blink_led(12, CONFIG_NOON_BLINK_DELAY);  // Noon chime - slower, more distine
         } else {
-            blink_led(hour % 24 == 0 ? 24 : hour % 24, 100);  // Hourly blink - faster
+            blink_led(hour % 24 == 0 ? 24 : hour % 24, CONFIG_HOURLY_BLINK_DELAY);  // Hourly blink - faster
         }
     }
 

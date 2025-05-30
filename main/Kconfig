@@ -1,0 +1,19 @@
+menu "ESP32 LED Clock Configuration"
+
+config WIFI_SSID
+    string "WiFi SSID"
+    default "your-ssid"
+
+config WIFI_PASS
+    string "WiFi Password"
+    default "your-password"
+
+config HOURLY_BLINK_DELAY
+    int "Hourly Blink Delay (ms)"
+    default 100
+
+config NOON_BLINK_DELAY
+    int "Noon Blink Delay (ms)"
+    default 200
+
+endmenu

@@ -23,10 +23,7 @@ Software:
     pi@raspberrypi:~/esp $ 
     ```
 * Before compile and flash, need to update Wifi_ssid
-    ``` c
-    #define WIFI_SSID "your-ssid"
-    #define WIFI_PASS "your-password"
-    ```
+	- update in VSCode > ESP-IDF EXPLORER > SDK Configuration Editor (menuconfig)
 
 ### ESP32 project using ESP-IDF that:
 1. Connects to Wi-Fi and syncs time with NTP.
