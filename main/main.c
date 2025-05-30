@@ -78,6 +78,10 @@ static void blink_led(int times, int delay_ms) {
 void app_main() {
     ESP_ERROR_CHECK(nvs_flash_init());
 
+    // Set Singapore timezone (UTC+8)
+    setenv("TZ", "SGT-8", 1);
+    tzset();
+
     if (!esp_sleep_get_wakeup_cause()) {
         connect_wifi();
         obtain_time();
@@ -93,7 +97,7 @@ void app_main() {
     int hour = timeinfo.tm_hour;
 
     if (minute % 15 == 0) {
-        blink_led(1, 300);
+        blink_led(1, 300);  // Blink once for every 15 minutes
         // printf(">>>>>>>>>>> Chime at %02d:%02d <<<<<<<<<<\n", hour, minute);
     }
 

@@ -22,7 +22,7 @@ Software:
         (GNU Binutils for Debian) 2.40) #1 SMP PREEMPT Debian 1:6.12.25-1+rpt1 (2025-04-30)
     pi@raspberrypi:~/esp $ 
     ```
-* Before compile and flash, need to update Wifi_ssid
+*  :point_right:  Before compile and flash, need to update Wifi_ssid
 	- update in VSCode > ESP-IDF EXPLORER > SDK Configuration Editor (menuconfig)
 
 ### ESP32 project using ESP-IDF that:
