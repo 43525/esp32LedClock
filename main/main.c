@@ -9,16 +9,17 @@
 #include "esp_sntp.h"
 #include "esp_system.h"
 #include "esp_sleep.h"
+#include "esp_attr.h"
 #include "nvs_flash.h"
 #include "driver/gpio.h"
 #include "esp_netif.h"
-
 #include "sdkconfig.h"
 
 // Configuration for Wi-Fi credentials and blink delays at menuConfig
 
 #define LED_GPIO GPIO_NUM_2
 #define TAG "MAIN"
+#define TEST_MODE 0  // Set to 1 for test mode
 
 RTC_DATA_ATTR static int wake_count = 0;
 
@@ -83,6 +84,22 @@ void app_main() {
     setenv("TZ", "SGT-8", 1);
     tzset();
 
+#if TEST_MODE
+    // Simulate 12:00 noon for testing
+    struct tm test_time = {
+        .tm_year = 2025 - 1900,
+        .tm_mon  = 5 - 1,
+        .tm_mday = 29,
+        .tm_hour = 12,
+        .tm_min  = 0,
+        .tm_sec  = 0
+    };
+    time_t fake_time = mktime(&test_time);
+    struct timeval now_val = { .tv_sec = fake_time };
+    settimeofday(&now_val, NULL);
+    ESP_LOGI(TAG, "Test mode: Simulated time set to 12:00");
+#endif
+
     wake_count++;
     ESP_LOGI(TAG, "Wake count: %d", wake_count);
 
@@ -113,7 +130,9 @@ void app_main() {
         }
     }
 
+#if !TEST_MODE
     ESP_LOGI(TAG, "Sleeping...");
     esp_sleep_enable_timer_wakeup(60 * 1000000ULL);
     esp_deep_sleep_start();
+#endif
 }
