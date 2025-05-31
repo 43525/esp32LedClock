@@ -2,7 +2,6 @@
 #include <string.h>
 #include <time.h>
 #include "freertos/FreeRTOS.h"
-#include "freertos/portmacro.h"
 #include "freertos/task.h"
 #include "esp_wifi.h"
 #include "esp_event.h"
@@ -20,6 +19,8 @@
 
 #define LED_GPIO GPIO_NUM_2
 #define TAG "MAIN"
+
+RTC_DATA_ATTR static int wake_count = 0;
 
 static void connect_wifi() {
     ESP_ERROR_CHECK(esp_netif_init());
@@ -82,7 +83,10 @@ void app_main() {
     setenv("TZ", "SGT-8", 1);
     tzset();
 
-    if (!esp_sleep_get_wakeup_cause()) {
+    wake_count++;
+    ESP_LOGI(TAG, "Wake count: %d", wake_count);
+
+    if (wake_count % 24 == 0 || !esp_sleep_get_wakeup_cause()) {
         connect_wifi();
         obtain_time();
         esp_wifi_stop();
@@ -97,8 +101,8 @@ void app_main() {
     int hour = timeinfo.tm_hour;
 
     if (minute % 15 == 0) {
-        blink_led(1, 300);  // Blink once for every 15 minutes
-        // printf(">>>>>>>>>>> Chime at %02d:%02d <<<<<<<<<<\n", hour, minute);
+        blink_led(1, 300);  // Quarter-hour chime
+        // printf(">>>>>>>>>>> Chime at %02d:%02d, wake_count: %02d  <<<<<<<<<<\n", hour, minute, wake_count);
     }
 
     if (minute == 0) {

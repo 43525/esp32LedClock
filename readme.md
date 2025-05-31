@@ -2,6 +2,14 @@ Esp32 LED Clock
 ---
 Noted that this code was created via ChatGPT for IOS 1.2024.347, iphone 8
 
+This code is for an ESP32-based device that connects to Wi-Fi, obtains the current time,
+and blinks an LED based on the time of day. It supports deep sleep to save power between operations.  
+The device will blink the LED once every 15 minutes, and on the hour it will blink a number of times
+corresponding to the hour (12 times at noon, and 1-11 times for other hours).  
+The device will also blink the LED at a slower rate for the noon chime.  
+The device uses the ESP-IDF framework and requires configuration for Wi-Fi credentials and blink delays.  
+The device will wake up every 60 seconds to check the time and blink the LED accordingly.  
+
 Software:
 * VSCode, extension ESP-IDF, esp-idf-v5.3.3
 * OS used: Debian GNU/Linux 12 (bookworm)
