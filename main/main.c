@@ -77,15 +77,9 @@ static void blink_led(int times, int delay_ms) {
     }
 }
 
-void app_main() {
-    ESP_ERROR_CHECK(nvs_flash_init());
-
-    // Set Singapore timezone (UTC+8)
-    setenv("TZ", "SGT-8", 1);
-    tzset();
-
-#if TEST_MODE
-    // Simulate 12:00 noon for testing
+void test_mode() {
+    // This function is only for testing purposes
+    ESP_LOGI(TAG, "Test mode activated. Simulating 12:00 noon.");
     struct tm test_time = {
         .tm_year = 2025 - 1900,
         .tm_mon  = 5 - 1,
@@ -97,8 +91,19 @@ void app_main() {
     time_t fake_time = mktime(&test_time);
     struct timeval now_val = { .tv_sec = fake_time };
     settimeofday(&now_val, NULL);
-    ESP_LOGI(TAG, "Test mode: Simulated time set to 12:00");
-#endif
+}
+
+
+void app_main() {
+    ESP_ERROR_CHECK(nvs_flash_init());
+
+    // Set Singapore timezone (UTC+8)
+    setenv("TZ", "SGT-8", 1);
+    tzset();
+
+    #if TEST_MODE
+        test_mode();
+    #endif
 
     wake_count++;
     ESP_LOGI(TAG, "Wake count: %d", wake_count);
@@ -107,6 +112,8 @@ void app_main() {
         connect_wifi();
         obtain_time();
         esp_wifi_stop();
+        // Uncomment the line below for debugging output
+        // ESP_LOGI(TAG, " >>>>> Current time resync: %s", asctime(localtime(&(time_t){time(NULL)})));
     }
 
     time_t now;
@@ -118,8 +125,9 @@ void app_main() {
     int hour = timeinfo.tm_hour;
 
     if (minute % 15 == 0) {
-        blink_led(1, 300);  // Quarter-hour chime
-        // printf(">>>>>>>>>>> Chime at %02d:%02d, wake_count: %02d  <<<<<<<<<<\n", hour, minute, wake_count);
+        blink_led(1, CONFIG_QUARTER_HOUR_BLINK_DELAY);  // Quarter-hour chime
+        // added delay to avoid rapid blinking
+        vTaskDelay(CONFIG_QUARTER_HOUR_BLINK_DELAY / portTICK_PERIOD_MS);
     }
 
     if (minute == 0) {
@@ -130,9 +138,9 @@ void app_main() {
         }
     }
 
-#if !TEST_MODE
-    ESP_LOGI(TAG, "Sleeping...");
-    esp_sleep_enable_timer_wakeup(60 * 1000000ULL);
-    esp_deep_sleep_start();
-#endif
+    #if !TEST_MODE
+        ESP_LOGI(TAG, "Sleeping...");
+        esp_sleep_enable_timer_wakeup(60 * 1000000ULL);
+        esp_deep_sleep_start();
+    #endif
 }

@@ -8,6 +8,10 @@ config WIFI_PASS
     string "WiFi Password"
     default "your-password"
 
+config QUARTER_HOUR_BLINK_DELAY
+    int "Quarter Hour Blink Delay (ms)"
+    default 300
+    
 config HOURLY_BLINK_DELAY
     int "Hourly Blink Delay (ms)"
     default 100

@@ -40,16 +40,18 @@ Software:
     * Blinks 12 times at 12:00:00 PM.
 3. Goes into deep sleep to save battery, waking up once per minute to check again.
 
-### 1. Wi-Fi + SNTP + Deep Sleep Example
+### 1. Wi-Fi + SNTP + Deep Sleep
 * Using GPIO2 for the LED.
 * `sdkconfig` with Wi-Fi and NVS enabled.
-* `idf.py menuconfig` is set to the correct Wi-Fi SSID/PASS, or you hardcode them.
+* `idf.py menuconfig` is set to the correct Wi-Fi SSID/PASS, or you hardcode them. Or
+* VSCode > ESP-IDF > SDK Configuration Editor
 
-### 2. Notes
+### 2. Notes on its Deep Sleep
 * First boot: Connects to Wi-Fi and syncs time.
 * On wake: Uses the RTC clock to avoid re-syncing NTP every time.
-* If battery-powered: you can use external RTC or backup battery for more accurate long-term timekeeping.
-* Can customize sleep time to shorter intervals (e.g. every 15s) to increase accuracy.
+* Time is syned via **SNTP**, and re-sync every 24 deep sleep wake-up, about 24mins.
+* Time zone is set to Singapore (UTC+8).
+* `wake_count` is stored in **RTC memory**.
 
 ### 3. Example Durations
 
