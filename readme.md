@@ -2,6 +2,14 @@ Esp32 LED Clock
 ---
 Noted that this code was created via ChatGPT for IOS 1.2024.347, iphone 8
 
+This code is for an ESP32-based device that connects to Wi-Fi, obtains the current time,
+and blinks an LED based on the time of day. It supports deep sleep to save power between operations.  
+The device will blink the LED once every 15 minutes, and on the hour it will blink a number of times
+corresponding to the hour (12 times at noon, and 1-11 times for other hours).  
+The device will also blink the LED at a slower rate for the noon chime.  
+The device uses the ESP-IDF framework and requires configuration for Wi-Fi credentials and blink delays.  
+The device will wake up every 60 seconds to check the time and blink the LED accordingly.  
+
 Software:
 * VSCode, extension ESP-IDF, esp-idf-v5.3.3
 * OS used: Debian GNU/Linux 12 (bookworm)
@@ -22,11 +30,8 @@ Software:
         (GNU Binutils for Debian) 2.40) #1 SMP PREEMPT Debian 1:6.12.25-1+rpt1 (2025-04-30)
     pi@raspberrypi:~/esp $ 
     ```
-* Before compile and flash, need to update Wifi_ssid
-    ``` c
-    #define WIFI_SSID "your-ssid"
-    #define WIFI_PASS "your-password"
-    ```
+*  :point_right:  Before compile and flash, need to update Wifi_ssid
+	- update in VSCode > ESP-IDF EXPLORER > SDK Configuration Editor (menuconfig)
 
 ### ESP32 project using ESP-IDF that:
 1. Connects to Wi-Fi and syncs time with NTP.
@@ -35,16 +40,18 @@ Software:
     * Blinks 12 times at 12:00:00 PM.
 3. Goes into deep sleep to save battery, waking up once per minute to check again.
 
-### 1. Wi-Fi + SNTP + Deep Sleep Example
+### 1. Wi-Fi + SNTP + Deep Sleep
 * Using GPIO2 for the LED.
 * `sdkconfig` with Wi-Fi and NVS enabled.
-* `idf.py menuconfig` is set to the correct Wi-Fi SSID/PASS, or you hardcode them.
+* `idf.py menuconfig` is set to the correct Wi-Fi SSID/PASS, or you hardcode them. Or
+* VSCode > ESP-IDF > SDK Configuration Editor
 
-### 2. Notes
+### 2. Notes on its Deep Sleep
 * First boot: Connects to Wi-Fi and syncs time.
 * On wake: Uses the RTC clock to avoid re-syncing NTP every time.
-* If battery-powered: you can use external RTC or backup battery for more accurate long-term timekeeping.
-* Can customize sleep time to shorter intervals (e.g. every 15s) to increase accuracy.
+* Time is syned via **SNTP**, and re-sync every 24 deep sleep wake-up, about 24mins.
+* Time zone is set to Singapore (UTC+8).
+* `wake_count` is stored in **RTC memory**.
 
 ### 3. Example Durations
 

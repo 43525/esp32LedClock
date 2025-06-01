@@ -2,7 +2,6 @@
 #include <string.h>
 #include <time.h>
 #include "freertos/FreeRTOS.h"
-#include "freertos/portmacro.h"
 #include "freertos/task.h"
 #include "esp_wifi.h"
 #include "esp_event.h"
@@ -10,14 +9,19 @@
 #include "esp_sntp.h"
 #include "esp_system.h"
 #include "esp_sleep.h"
+#include "esp_attr.h"
 #include "nvs_flash.h"
 #include "driver/gpio.h"
 #include "esp_netif.h"
+#include "sdkconfig.h"
 
-#define WIFI_SSID "your-ssid"
-#define WIFI_PASS "your-password"
+// Configuration for Wi-Fi credentials and blink delays at menuConfig
+
 #define LED_GPIO GPIO_NUM_2
 #define TAG "MAIN"
+#define TEST_MODE 0  // Set to 1 for test mode
+
+RTC_DATA_ATTR static int wake_count = 0;
 
 static void connect_wifi() {
     ESP_ERROR_CHECK(esp_netif_init());
@@ -30,8 +34,8 @@ static void connect_wifi() {
 
     wifi_config_t sta_config = {
         .sta = {
-            .ssid = WIFI_SSID,
-            .password = WIFI_PASS,
+            .ssid = CONFIG_WIFI_SSID,
+            .password = CONFIG_WIFI_PASS,
             .threshold.authmode = WIFI_AUTH_WPA2_PSK,
         }
     };
@@ -73,13 +77,43 @@ static void blink_led(int times, int delay_ms) {
     }
 }
 
+void test_mode() {
+    // This function is only for testing purposes
+    ESP_LOGI(TAG, "Test mode activated. Simulating 12:00 noon.");
+    struct tm test_time = {
+        .tm_year = 2025 - 1900,
+        .tm_mon  = 5 - 1,
+        .tm_mday = 29,
+        .tm_hour = 12,
+        .tm_min  = 0,
+        .tm_sec  = 0
+    };
+    time_t fake_time = mktime(&test_time);
+    struct timeval now_val = { .tv_sec = fake_time };
+    settimeofday(&now_val, NULL);
+}
+
+
 void app_main() {
     ESP_ERROR_CHECK(nvs_flash_init());
 
-    if (!esp_sleep_get_wakeup_cause()) {
+    // Set Singapore timezone (UTC+8)
+    setenv("TZ", "SGT-8", 1);
+    tzset();
+
+    #if TEST_MODE
+        test_mode();
+    #endif
+
+    wake_count++;
+    ESP_LOGI(TAG, "Wake count: %d", wake_count);
+
+    if (wake_count % 24 == 0 || !esp_sleep_get_wakeup_cause()) {
         connect_wifi();
         obtain_time();
         esp_wifi_stop();
+        // Uncomment the line below for debugging output
+        // ESP_LOGI(TAG, " >>>>> Current time resync: %s", asctime(localtime(&(time_t){time(NULL)})));
     }
 
     time_t now;
@@ -91,18 +125,22 @@ void app_main() {
     int hour = timeinfo.tm_hour;
 
     if (minute % 15 == 0) {
-        blink_led(1, 300);
+        blink_led(1, CONFIG_QUARTER_HOUR_BLINK_DELAY);  // Quarter-hour chime
+        // added delay to avoid rapid blinking
+        vTaskDelay(CONFIG_QUARTER_HOUR_BLINK_DELAY / portTICK_PERIOD_MS);
     }
 
     if (minute == 0) {
         if (hour == 12) {
-            blink_led(12, 200);  // Noon chime - slower, more distine
+            blink_led(12, CONFIG_NOON_BLINK_DELAY);  // Noon chime - slower, more distine
         } else {
-            blink_led(hour % 24 == 0 ? 24 : hour % 24, 100);  // Hourly blink - faster
+            blink_led(hour % 24 == 0 ? 24 : hour % 24, CONFIG_HOURLY_BLINK_DELAY);  // Hourly blink - faster
         }
     }
 
-    ESP_LOGI(TAG, "Sleeping...");
-    esp_sleep_enable_timer_wakeup(60 * 1000000ULL);
-    esp_deep_sleep_start();
+    #if !TEST_MODE
+        ESP_LOGI(TAG, "Sleeping...");
+        esp_sleep_enable_timer_wakeup(60 * 1000000ULL);
+        esp_deep_sleep_start();
+    #endif
 }

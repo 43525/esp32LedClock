@@ -38,4 +38,4 @@ backup/
 __pycache__/
 .python-version
 *.bin
-.devcontainer/
+# .devcontainer/
