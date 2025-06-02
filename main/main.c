@@ -22,11 +22,11 @@
 #define TEST_MODE 0  // Set to 1 for test mode
 
 RTC_DATA_ATTR static int wake_count = 0;
+static void blink_led(int times, int delay_ms); // phototype
 
-static void connect_wifi() {
+static bool connect_wifi() {
     ESP_ERROR_CHECK(esp_netif_init());
     ESP_ERROR_CHECK(esp_event_loop_create_default());
-
     esp_netif_create_default_wifi_sta();
 
     wifi_init_config_t wifi_config = WIFI_INIT_CONFIG_DEFAULT();
@@ -43,11 +43,20 @@ static void connect_wifi() {
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &sta_config));
     ESP_ERROR_CHECK(esp_wifi_start());
+
     ESP_LOGI(TAG, "Connecting to Wi-Fi...");
-
     ESP_ERROR_CHECK(esp_wifi_connect());
-
     vTaskDelay(pdMS_TO_TICKS(5000));
+
+    wifi_ap_record_t ap_info;
+    if (esp_wifi_sta_get_ap_info(&ap_info) == ESP_OK) {
+        ESP_LOGI(TAG, "Connected to WiFi");
+        return true;
+    } else {
+        ESP_LOGE(TAG, "WiFi connection failed. Blinking error pattern.");
+        blink_led(10, 100);  // rapid blinks indicate WiFi failure
+        return false;
+    }
 }
 
 static void obtain_time() {
@@ -106,14 +115,25 @@ void app_main() {
     #endif
 
     wake_count++;
-    ESP_LOGI(TAG, "Wake count: %d", wake_count);
+    // ESP_LOGI(TAG, "Wake count: %d", wake_count);
+
+    esp_sleep_wakeup_cause_t wake_cause = esp_sleep_get_wakeup_cause();
+    // Only run LED test and Wi-Fi setup on first boot (not from deep sleep)
+    if (wake_cause == ESP_SLEEP_WAKEUP_UNDEFINED) {
+        ESP_LOGI(TAG, ">>>>> First boot or reset detected. Running initial setup.");
+        blink_led(2, 200);  // two short blinks to confirm startup
+    } else {
+        ESP_LOGI(TAG, ">>>>> Woken up from deep sleep. Wake cause: %d, Wake count: %d", wake_cause, wake_count);
+    }
 
     if (wake_count % 24 == 0 || !esp_sleep_get_wakeup_cause()) {
-        connect_wifi();
-        obtain_time();
-        esp_wifi_stop();
+        bool wifi_ok = connect_wifi();
+        if (wifi_ok) {
+            obtain_time();
+            esp_wifi_stop();
+        }
         // Uncomment the line below for debugging output
-        // ESP_LOGI(TAG, " >>>>> Current time resync: %s", asctime(localtime(&(time_t){time(NULL)})));
+        ESP_LOGI(TAG, " >>>>> Current time resync: %s", asctime(localtime(&(time_t){time(NULL)})));
     }
 
     time_t now;
@@ -128,6 +148,7 @@ void app_main() {
         blink_led(1, CONFIG_QUARTER_HOUR_BLINK_DELAY);  // Quarter-hour chime
         // added delay to avoid rapid blinking
         vTaskDelay(CONFIG_QUARTER_HOUR_BLINK_DELAY / portTICK_PERIOD_MS);
+        ESP_LOGI(TAG, " >>>> Quarter-hour chime at %02d:%02d", hour, minute);     // Debug output
     }
 
     if (minute == 0) {
