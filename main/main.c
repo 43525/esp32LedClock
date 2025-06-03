@@ -90,34 +90,58 @@ static void blink_led(int times, int delay_ms) {
         gpio_set_level(LED_GPIO, 0);
         vTaskDelay(delay_ms / portTICK_PERIOD_MS);
     }
-    ESP_LOGI(TAG, " >>>>> LED blinked %d times with %d ms delay", times, delay_ms);
+    ESP_LOGI(TAG, "                             LED blinked %d times with %d ms delay", times, delay_ms);
+}
+
+void between_blinks_delay() {
+    // This function is used to add a delay between blinks
+    vTaskDelay(CONFIG_BETWEEN_BLINKS_DELAY / portTICK_PERIOD_MS);
+}
+
+void chimesTimes(int hour, int minute) {
+    // This function handles the chime logic based on the current time
+    if (minute % 15 == 0) {
+        blink_led(1, CONFIG_QUARTER_HOUR_BLINK_DELAY);  // Quarter-hour chime
+    }
+    between_blinks_delay();
+    if (minute == 0) {
+        if (hour == 12) {
+            blink_led(12, CONFIG_NOON_BLINK_DELAY);  // Noon chime - slower, more distine
+        } else {
+            blink_led(hour % 24 == 0 ? 24 : hour % 24, CONFIG_HOURLY_BLINK_DELAY);  // Hourly blink - faster
+        }
+    }
 }
 
 // This function is only for testing purposes
 void test_mode() {
     ESP_LOGI(TAG, "TEST MODE ENABLED");
-    ESP_LOGI(TAG, "Running LED test...");
+    ESP_LOGI(TAG, "Simulating first boot LED test...");
     blink_led(2, 200);
     ESP_LOGI(TAG, "Simulating Wi-Fi failure blink...");
     blink_led(10, 100);
-    ESP_LOGI(TAG, "Simulating quarterly chime...");
-    blink_led(1, CONFIG_QUARTER_HOUR_BLINK_DELAY);
-    ESP_LOGI(TAG, "Simulating 3 o'clock hourly chime...");
-    blink_led(3, CONFIG_HOURLY_BLINK_DELAY);
-    ESP_LOGI(TAG, "Simulating noon chime...");
-    blink_led(12, CONFIG_NOON_BLINK_DELAY);
-    ESP_LOGI(TAG, "Simulating time obtain at 12:00 noon.");
-    struct tm test_time = {
-        .tm_year = 2025 - 1900,
-        .tm_mon  = 5 - 1,
-        .tm_mday = 29,
-        .tm_hour = 12,
-        .tm_min  = 0,
-        .tm_sec  = 0
-    };
-    time_t fake_time = mktime(&test_time);
-    struct timeval now_val = { .tv_sec = fake_time };
-    settimeofday(&now_val, NULL);
+    between_blinks_delay();
+
+    int testHour = CONFIG_TEST_MODE_HOUR;
+    int testMinute = CONFIG_TEST_MODE_MINUTE;
+    ESP_LOGI(TAG, "Simulating chime at %02d:%02d", testHour, testMinute);
+    chimesTimes(testHour, testMinute);
+    between_blinks_delay();
+    
+    #if CONFIG_TEST_NOON_BLINK
+        ESP_LOGI(TAG, "Simulating time obtain at 12:00 noon.");
+        struct tm test_time = {
+            .tm_year = 2025 - 1900,
+            .tm_mon  = 5 - 1,
+            .tm_mday = 29,
+            .tm_hour = 12,
+            .tm_min  = 0,
+            .tm_sec  = 0
+        };
+        time_t fake_time = mktime(&test_time);
+        struct timeval now_val = { .tv_sec = fake_time };
+        settimeofday(&now_val, NULL);
+    #endif
 
     ESP_LOGI(TAG, "TEST MODE COMPLETED");
 }
@@ -145,13 +169,12 @@ void app_main() {
         ESP_LOGI(TAG, "Woken up from deep sleep. Wake cause: %d, Wake count: %d", wake_cause, wake_count);
     }
 
-    if (wake_count % 24 == 0 || !esp_sleep_get_wakeup_cause()) {
+    if (wake_count % CONFIG_WAKE_COUNT_TO_RESYNC == 0 || !esp_sleep_get_wakeup_cause()) {
         bool wifi_ok = connect_wifi();
         if (wifi_ok) {
             obtain_time();
             esp_wifi_stop();
         }
-        // Uncomment the line below for debugging output
         ESP_LOGI(TAG, "Current time resync: %s", asctime(localtime(&(time_t){time(NULL)})));
     }
 
@@ -162,20 +185,7 @@ void app_main() {
 
     int minute = timeinfo.tm_min;
     int hour = timeinfo.tm_hour;
-
-    if (minute % 15 == 0) {
-        blink_led(1, CONFIG_QUARTER_HOUR_BLINK_DELAY);  // Quarter-hour chime
-        // added delay to avoid rapid blinking
-        vTaskDelay(CONFIG_QUARTER_HOUR_BLINK_DELAY / portTICK_PERIOD_MS);
-    }
-
-    if (minute == 0) {
-        if (hour == 12) {
-            blink_led(12, CONFIG_NOON_BLINK_DELAY);  // Noon chime - slower, more distine
-        } else {
-            blink_led(hour % 24 == 0 ? 24 : hour % 24, CONFIG_HOURLY_BLINK_DELAY);  // Hourly blink - faster
-        }
-    }
+    chimesTimes(hour, minute);
 
     #if !TEST_MODE
         ESP_LOGI(TAG, "Sleeping...");
