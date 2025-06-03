@@ -20,4 +20,8 @@ config NOON_BLINK_DELAY
     int "Noon Blink Delay (ms)"
     default 200
 
+config TEST_MODE
+    bool "Enable test mode to simulate LED behavior"
+    default n
+
 endmenu

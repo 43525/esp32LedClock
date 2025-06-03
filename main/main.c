@@ -19,7 +19,13 @@
 
 #define LED_GPIO GPIO_NUM_2
 #define TAG "MAIN"
-#define TEST_MODE 0  // Set to 1 for test mode
+
+// Set up test mode flag from menuconfig. Set to 1 for test mode
+#ifdef CONFIG_TEST_MODE
+    #define TEST_MODE 1
+#else
+    #define TEST_MODE 0
+#endif
 
 RTC_DATA_ATTR static int wake_count = 0;
 static void blink_led(int times, int delay_ms); // phototype
@@ -84,11 +90,23 @@ static void blink_led(int times, int delay_ms) {
         gpio_set_level(LED_GPIO, 0);
         vTaskDelay(delay_ms / portTICK_PERIOD_MS);
     }
+    ESP_LOGI(TAG, " >>>>> LED blinked %d times with %d ms delay", times, delay_ms);
 }
 
+// This function is only for testing purposes
 void test_mode() {
-    // This function is only for testing purposes
-    ESP_LOGI(TAG, "Test mode activated. Simulating 12:00 noon.");
+    ESP_LOGI(TAG, "TEST MODE ENABLED");
+    ESP_LOGI(TAG, "Running LED test...");
+    blink_led(2, 200);
+    ESP_LOGI(TAG, "Simulating Wi-Fi failure blink...");
+    blink_led(10, 100);
+    ESP_LOGI(TAG, "Simulating quarterly chime...");
+    blink_led(1, CONFIG_QUARTER_HOUR_BLINK_DELAY);
+    ESP_LOGI(TAG, "Simulating 3 o'clock hourly chime...");
+    blink_led(3, CONFIG_HOURLY_BLINK_DELAY);
+    ESP_LOGI(TAG, "Simulating noon chime...");
+    blink_led(12, CONFIG_NOON_BLINK_DELAY);
+    ESP_LOGI(TAG, "Simulating time obtain at 12:00 noon.");
     struct tm test_time = {
         .tm_year = 2025 - 1900,
         .tm_mon  = 5 - 1,
@@ -100,6 +118,8 @@ void test_mode() {
     time_t fake_time = mktime(&test_time);
     struct timeval now_val = { .tv_sec = fake_time };
     settimeofday(&now_val, NULL);
+
+    ESP_LOGI(TAG, "TEST MODE COMPLETED");
 }
 
 
@@ -115,15 +135,14 @@ void app_main() {
     #endif
 
     wake_count++;
-    // ESP_LOGI(TAG, "Wake count: %d", wake_count);
 
     esp_sleep_wakeup_cause_t wake_cause = esp_sleep_get_wakeup_cause();
     // Only run LED test and Wi-Fi setup on first boot (not from deep sleep)
     if (wake_cause == ESP_SLEEP_WAKEUP_UNDEFINED) {
-        ESP_LOGI(TAG, ">>>>> First boot or reset detected. Running initial setup.");
+        ESP_LOGI(TAG, "First boot or reset detected. Running initial setup.");
         blink_led(2, 200);  // two short blinks to confirm startup
     } else {
-        ESP_LOGI(TAG, ">>>>> Woken up from deep sleep. Wake cause: %d, Wake count: %d", wake_cause, wake_count);
+        ESP_LOGI(TAG, "Woken up from deep sleep. Wake cause: %d, Wake count: %d", wake_cause, wake_count);
     }
 
     if (wake_count % 24 == 0 || !esp_sleep_get_wakeup_cause()) {
@@ -133,7 +152,7 @@ void app_main() {
             esp_wifi_stop();
         }
         // Uncomment the line below for debugging output
-        ESP_LOGI(TAG, " >>>>> Current time resync: %s", asctime(localtime(&(time_t){time(NULL)})));
+        ESP_LOGI(TAG, "Current time resync: %s", asctime(localtime(&(time_t){time(NULL)})));
     }
 
     time_t now;
@@ -148,7 +167,6 @@ void app_main() {
         blink_led(1, CONFIG_QUARTER_HOUR_BLINK_DELAY);  // Quarter-hour chime
         // added delay to avoid rapid blinking
         vTaskDelay(CONFIG_QUARTER_HOUR_BLINK_DELAY / portTICK_PERIOD_MS);
-        ESP_LOGI(TAG, " >>>> Quarter-hour chime at %02d:%02d", hour, minute);     // Debug output
     }
 
     if (minute == 0) {
