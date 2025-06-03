@@ -84,11 +84,15 @@ static void obtain_time() {
 
 static void blink_led(int times, int delay_ms) {
     gpio_set_direction(LED_GPIO, GPIO_MODE_OUTPUT);
-    for (int i = 0; i < times; ++i) {
+    for (int i = 1; i <= times; ++i) {
         gpio_set_level(LED_GPIO, 1);
         vTaskDelay(delay_ms / portTICK_PERIOD_MS);
         gpio_set_level(LED_GPIO, 0);
         vTaskDelay(delay_ms / portTICK_PERIOD_MS);
+        if (i % 3 == 0) {
+            vTaskDelay(delay_ms / portTICK_PERIOD_MS);
+            vTaskDelay(delay_ms / portTICK_PERIOD_MS);
+        }
     }
     ESP_LOGI(TAG, "                             LED blinked %d times with %d ms delay", times, delay_ms);
 }
