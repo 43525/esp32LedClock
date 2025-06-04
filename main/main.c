@@ -1,3 +1,10 @@
+/*
+    LED Chime Clock
+    This code implements a simple LED chime clock that connects to Wi-Fi, obtains the current time from an NTP server, and blinks an LED at specified intervals based on the time.
+    It supports a test mode for simulating various scenarios and uses FreeRTOS for task management and delays.
+
+    @author Alvin T W Ng
+*/
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
@@ -17,7 +24,6 @@
 
 // Configuration for Wi-Fi credentials and blink delays at menuConfig
 
-#define LED_GPIO GPIO_NUM_2
 #define TAG "MAIN"
 
 // Set up test mode flag from menuconfig. Set to 1 for test mode
@@ -83,15 +89,14 @@ static void obtain_time() {
 }
 
 static void blink_led(int times, int delay_ms) {
-    gpio_set_direction(LED_GPIO, GPIO_MODE_OUTPUT);
+    gpio_set_direction(CONFIG_LED_GPIO, GPIO_MODE_OUTPUT);
     for (int i = 1; i <= times; ++i) {
-        gpio_set_level(LED_GPIO, 1);
+        gpio_set_level(CONFIG_LED_GPIO, 1);
         vTaskDelay(delay_ms / portTICK_PERIOD_MS);
-        gpio_set_level(LED_GPIO, 0);
+        gpio_set_level(CONFIG_LED_GPIO, 0);
         vTaskDelay(delay_ms / portTICK_PERIOD_MS);
         if (i % 3 == 0) {
-            vTaskDelay(delay_ms / portTICK_PERIOD_MS);
-            vTaskDelay(delay_ms / portTICK_PERIOD_MS);
+            vTaskDelay(2 * delay_ms / portTICK_PERIOD_MS); // blank blink every 3 blinks
         }
     }
     ESP_LOGI(TAG, "                             LED blinked %d times with %d ms delay", times, delay_ms);
@@ -109,11 +114,10 @@ void chimesTimes(int hour, int minute) {
     }
     between_blinks_delay();
     if (minute == 0) {
-        if (hour == 12) {
-            blink_led(12, CONFIG_NOON_BLINK_DELAY);  // Noon chime - slower, more distine
-        } else {
-            blink_led(hour % 24 == 0 ? 24 : hour % 24, CONFIG_HOURLY_BLINK_DELAY);  // Hourly blink - faster
-        }
+        // Noon chime - slower, more distine. Hourly blink - faster
+        int count = (hour == 12) ? 12 : ((hour % 24 == 0) ? 24 : hour % 24);
+        int delay = (hour == 12) ? CONFIG_NOON_BLINK_DELAY : CONFIG_HOURLY_BLINK_DELAY;
+        blink_led(count, delay);
     }
 }
 
@@ -187,9 +191,7 @@ void app_main() {
     time(&now);
     localtime_r(&now, &timeinfo);
 
-    int minute = timeinfo.tm_min;
-    int hour = timeinfo.tm_hour;
-    chimesTimes(hour, minute);
+    chimesTimes(timeinfo.tm_hour, timeinfo.tm_min);
 
     #if !TEST_MODE
         ESP_LOGI(TAG, "Sleeping...");

@@ -8,6 +8,10 @@ config WIFI_PASS
     string "WiFi Password"
     default "your-password"
 
+config LED_GPIO
+    int "GPIO pin for LED"
+    default 2
+
 config QUARTER_HOUR_BLINK_DELAY
     int "Quarter Hour Blink Delay (ms)"
     default 300

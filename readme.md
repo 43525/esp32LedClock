@@ -1,3 +1,6 @@
+| Supported Targets | ESP32 |
+| --- | --- |
+
 Esp32 LED Clock
 ---
 Noted that this code was created via ChatGPT for IOS 1.2024.347, iphone 8
@@ -59,6 +62,19 @@ Software:
 | ------------ | ----------- | ------------------ | ---------- |
 | 3 AM Hourly  | 3           | 100 ms             | \~0.6 sec  |
 | 12 PM (Noon) | 12          | 200 ms             | \~4.8 sec  |
+
+Note: There are pause delay in between every 3 blinks.
+
+---
+### Hardware
+There has onboard LED on a GPIO pin (GPIO2) for this ESP32 model.
+
+#### LED (optional)
+LED | ESP32
+--- | ---
+pin+ | GPIO2
+pin- | 220 ohms resistor to GND
+
 
 ---
 ---
