@@ -96,7 +96,7 @@ static void blink_led(int times, int delay_ms) {
         gpio_set_level(CONFIG_LED_GPIO, 0);
         vTaskDelay(delay_ms / portTICK_PERIOD_MS);
         if (i % 3 == 0) {
-            vTaskDelay(2 * delay_ms / portTICK_PERIOD_MS); // blank blink every 3 blinks
+            vTaskDelay(2 * delay_ms / portTICK_PERIOD_MS); // blank blink after every 3 blinks
         }
     }
     ESP_LOGI(TAG, "                             LED blinked %d times with %d ms delay", times, delay_ms);
