@@ -34,6 +34,8 @@
 #endif
 
 RTC_DATA_ATTR static int wake_count = 0;
+static int sleep_duration; // after quarter chimes, seconds
+
 static void blink_led(int times, int delay_ms); // phototype
 
 static bool connect_wifi() {
@@ -111,6 +113,8 @@ void chimesTimes(int hour, int minute) {
     // This function handles the chime logic based on the current time
     if (minute % 15 == 0) {
         blink_led(1, CONFIG_QUARTER_HOUR_BLINK_DELAY);  // Quarter-hour chime
+        sleep_duration = 60 * 13;    // Set sleep duration to 13 minutes after chime
+        // ESP_LOGI(TAG, "Chime at %02d:%02d", hour, minute);
     }
     between_blinks_delay();
     if (minute == 0) {
@@ -167,6 +171,7 @@ void app_main() {
     #endif
 
     wake_count++;
+    sleep_duration = 60; // Reset sleep duration for next wake
 
     esp_sleep_wakeup_cause_t wake_cause = esp_sleep_get_wakeup_cause();
     // Only run LED test and Wi-Fi setup on first boot (not from deep sleep)
@@ -190,12 +195,13 @@ void app_main() {
     struct tm timeinfo;
     time(&now);
     localtime_r(&now, &timeinfo);
+    ESP_LOGI(TAG, "Current time: %s", asctime(&timeinfo));
 
     chimesTimes(timeinfo.tm_hour, timeinfo.tm_min);
 
     #if !TEST_MODE
-        ESP_LOGI(TAG, "Sleeping...");
-        esp_sleep_enable_timer_wakeup(60 * 1000000ULL);
+        ESP_LOGI(TAG, "Sleeping... Will wake up after %d seconds", sleep_duration);
+        esp_sleep_enable_timer_wakeup(sleep_duration * 1000000ULL);
         esp_deep_sleep_start();
     #endif
 }

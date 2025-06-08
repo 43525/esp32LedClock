@@ -51,6 +51,7 @@ This project implements an ESP32-based clock that connects to Wi-Fi, obtains the
 - **Subsequent Wakeups:** Uses RTC time to avoid frequent resynchronization.
 - **Time Zone:** Singapore (UTC+8)
 - **Wake Count:** Stored in RTC memory
+- **Sleep duration:** Longer duration after quarter chime once, then return to normal duration.
 
 ---
 
