@@ -90,6 +90,15 @@ static void obtain_time() {
     ESP_LOGI(TAG, "Time obtained.");
 }
 
+static void getWifiTime() {
+    bool wifi_ok = connect_wifi();
+    if (wifi_ok) {
+        obtain_time();
+        esp_wifi_stop();
+    }
+    ESP_LOGI(TAG, "Current time resync: %s", asctime(localtime(&(time_t){time(NULL)})));
+}
+
 static void blink_led(int times, int delay_ms) {
     gpio_set_direction(CONFIG_LED_GPIO, GPIO_MODE_OUTPUT);
     for (int i = 1; i <= times; ++i) {
@@ -178,17 +187,9 @@ void app_main() {
     if (wake_cause == ESP_SLEEP_WAKEUP_UNDEFINED) {
         ESP_LOGI(TAG, "First boot or reset detected. Running initial setup.");
         blink_led(2, 200);  // two short blinks to confirm startup
+        getWifiTime();
     } else {
         ESP_LOGI(TAG, "Woken up from deep sleep. Wake cause: %d, Wake count: %d", wake_cause, wake_count);
-    }
-
-    if (wake_count % CONFIG_WAKE_COUNT_TO_RESYNC == 0 || !esp_sleep_get_wakeup_cause()) {
-        bool wifi_ok = connect_wifi();
-        if (wifi_ok) {
-            obtain_time();
-            esp_wifi_stop();
-        }
-        ESP_LOGI(TAG, "Current time resync: %s", asctime(localtime(&(time_t){time(NULL)})));
     }
 
     time_t now;
@@ -198,6 +199,10 @@ void app_main() {
     ESP_LOGI(TAG, "Current time: %s", asctime(&timeinfo));
 
     chimesTimes(timeinfo.tm_hour, timeinfo.tm_min);
+
+    if (wake_count % CONFIG_WAKE_COUNT_TO_RESYNC == 0) {
+        getWifiTime(); // This resync costs at least 8sec
+    }
 
     #if !TEST_MODE
         ESP_LOGI(TAG, "Sleeping... Will wake up after %d seconds", sleep_duration);
