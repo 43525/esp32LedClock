@@ -3,14 +3,14 @@
 > **Supported Target:** ESP32  
 > **Note:** This code was generated using ChatGPT for iOS version 1.2024.347 on an iPhone 8.
 
-This project implements an ESP32-based clock that connects to Wi-Fi, obtains the current time via SNTP, and blinks an LED based on the time of day. It also supports deep sleep to conserve power between operations.
+This project implements an ESP32-based clock that connects to Wi-Fi, obtains the current time via NTP, and blinks an LED based on the time of day. It also supports deep sleep to conserve power between operations.
 
 ## Functionality
 
 - Blinks the LED once every 15 minutes (at 00, 15, 30, and 45 minutes past the hour).
 - At the top of the hour, blinks a number of times corresponding to the current hour (e.g., 12 blinks at noon).
 - The noon chime blinks more slowly than the hourly blinks.
-- The device enters deep sleep and wakes up every 60 seconds to update time and blink accordingly.
+- The device enters deep sleep and wakes up 780 seconds and every 60 seconds to update time and blink at each quarter hour.
 
 ---
 
@@ -43,7 +43,8 @@ This project implements an ESP32-based clock that connects to Wi-Fi, obtains the
   - Once every 15 minutes
   - Hourly based on the current hour
 - Uses deep sleep to save battery life
-- Resynchronizes time periodically (approximately every 24 wake cycles, ~24 minutes)
+- Resynchronizes time periodically (approximately every 24 (default) wake cycles, ~120 minutes)
+- Show 2 blinks during power on. 10 blinks if there is Wifi error.
 
 ### 2. Deep Sleep Behavior
 
@@ -51,7 +52,7 @@ This project implements an ESP32-based clock that connects to Wi-Fi, obtains the
 - **Subsequent Wakeups:** Uses RTC time to avoid frequent resynchronization.
 - **Time Zone:** Singapore (UTC+8)
 - **Wake Count:** Stored in RTC memory
-- **Sleep duration:** Longer duration after quarter chime once, then return to normal duration.
+- **Sleep duration:** Longer duration after quarter chime once, then return to normal 60s duration.
 
 ---
 
@@ -60,7 +61,7 @@ This project implements an ESP32-based clock that connects to Wi-Fi, obtains the
 | Event        | Blink Count | Delay per Blink | Total Duration |
 |--------------|-------------|------------------|----------------|
 | 3 AM Hourly  | 3           | 100 ms           | ~0.6 sec       |
-| 12 PM (Noon) | 12          | 200 ms           | ~4.8 sec       |
+| 12 PM (Noon) | 12          | 200 ms           | ~6 sec       |
 
 > *Note:* A pause is inserted after every three blinks for clarity.
 
