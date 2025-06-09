@@ -76,3 +76,8 @@ The board includes an onboard LED connected to a GPIO pin (default: **GPIO2**).
 |---------|-----------|------------------------------|
 | Anode   | GPIO2     | Configurable via `menuconfig`|
 | Cathode | GND       | Through a 220Ω resistor      |
+
+![image](./img/a2025esp32LedClock3.jpeg)
+
+---
+author: Alvin T W Ng @2025
