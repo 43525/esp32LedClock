@@ -1,7 +1,9 @@
 /*
     LED Chime Clock
-    This code implements a simple LED chime clock that connects to Wi-Fi, obtains the current time from an NTP server, and blinks an LED at specified intervals based on the time.
-    It supports a test mode for simulating various scenarios and uses FreeRTOS for task management and delays.
+    This code implements a simple LED chime clock that connects to Wi-Fi, obtains the current
+     time from an NTP server, and blinks an LED at specified intervals based on the time.
+    It supports a test mode for simulating various scenarios and uses FreeRTOS for task
+     management and delays.
 
     @author Alvin T W Ng
 */
@@ -110,7 +112,7 @@ static void blink_led(int times, int delay_ms) {
             vTaskDelay(2 * delay_ms / portTICK_PERIOD_MS); // blank blink after every 3 blinks
         }
     }
-    ESP_LOGI(TAG, "                             LED blinked %d times with %d ms delay", times, delay_ms);
+    ESP_LOGI(TAG, "                  LED blinked %d times with %d ms delay", times, delay_ms);
 }
 
 void between_blinks_delay() {
@@ -198,7 +200,8 @@ void app_main() {
         blink_led(2, 200);  // two short blinks to confirm startup
         getWifiTime();
     } else {
-        ESP_LOGI(TAG, "Woken up from deep sleep. Wake cause: %d, Wake count: %d", wake_cause, wake_count);
+        ESP_LOGI(TAG, "Woken up from deep sleep. Wake cause: %d, Wake count: %d",
+             wake_cause, wake_count);
     }
 
     time_t now;
