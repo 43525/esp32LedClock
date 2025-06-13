@@ -121,17 +121,26 @@ void between_blinks_delay() {
 void chimesTimes(int hour, int minute) {
     // This function handles the chime logic based on the current time
     if (minute % 15 == 0) {
-        blink_led(1, CONFIG_QUARTER_HOUR_BLINK_DELAY);  // Quarter-hour chime
+        #if CONFIG_CHIME_MODE_ALL
+            blink_led(1, CONFIG_QUARTER_HOUR_BLINK_DELAY);  // Quarter-hour chime
+        #endif
         sleep_duration = 60 * 13;    // Set sleep duration to 13 minutes after chime
         // ESP_LOGI(TAG, "Chime at %02d:%02d", hour, minute);
     }
     between_blinks_delay();
-    if (minute == 0) {
-        // Noon chime - slower, more distine. Hourly blink - faster
-        int count = (hour == 12) ? 12 : ((hour % 24 == 0) ? 24 : hour % 24);
-        int delay = (hour == 12) ? CONFIG_NOON_BLINK_DELAY : CONFIG_HOURLY_BLINK_DELAY;
-        blink_led(count, delay);
-    }
+    #if CONFIG_CHIME_MODE_ALL || CONFIG_CHIME_MODE_HOURLY
+        if (minute == 0) {
+            // Noon chime - slower, more distine. Hourly blink - faster
+            int count = (hour == 12) ? 12 : ((hour % 24 == 0) ? 24 : hour % 24);
+            int delay = (hour == 12) ? CONFIG_NOON_BLINK_DELAY : CONFIG_HOURLY_BLINK_DELAY;
+            blink_led(count, delay);
+        }
+    #endif
+    #if CONFIG_CHIME_MODE_NOON_ONLY
+        if (hour == 12 && minute == 0) {
+            blink_led(12, CONFIG_NOON_BLINK_DELAY); // Noon chime
+        }
+    #endif
 }
 
 // This function is only for testing purposes
