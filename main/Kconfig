@@ -40,6 +40,28 @@ config WAKE_COUNT_TO_RESYNC
       This is useful for maintaining accurate timekeeping.
       Set to 0 to disable resyncing.
 
+choice
+    prompt "Chime Mode"
+    default CHIME_MODE_ALL
+    help
+        Select chime mode:
+        - ALL: Quarter-hour, hourly, and noon
+        - HOURLY_ONLY: Only hourly and noon
+        - NOON_ONLY: Only noon chime
+config CHIME_MODE_ALL
+    bool "All Chimes Enabled"
+    help
+        Enable all chimes: quarter-hour, hourly, and noon.
+config CHIME_MODE_HOURLY
+    bool "Hourly Chimes"
+    help
+        Enable only hourly and noon chimes.
+config CHIME_MODE_NOON_ONLY
+    bool "Noon Chime Only"
+    help
+        Enable only noon chime.
+endchoice
+
 endmenu
 
 menu "ESP32 LED Clock Test Mode"

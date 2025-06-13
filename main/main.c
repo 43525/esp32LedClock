@@ -1,7 +1,9 @@
 /*
     LED Chime Clock
-    This code implements a simple LED chime clock that connects to Wi-Fi, obtains the current time from an NTP server, and blinks an LED at specified intervals based on the time.
-    It supports a test mode for simulating various scenarios and uses FreeRTOS for task management and delays.
+    This code implements a simple LED chime clock that connects to Wi-Fi, obtains the current
+     time from an NTP server, and blinks an LED at specified intervals based on the time.
+    It supports a test mode for simulating various scenarios and uses FreeRTOS for task
+     management and delays.
 
     @author Alvin T W Ng
 */
@@ -34,6 +36,8 @@
 #endif
 
 RTC_DATA_ATTR static int wake_count = 0;
+static int sleep_duration; // after quarter chimes, seconds
+
 static void blink_led(int times, int delay_ms); // phototype
 
 static bool connect_wifi() {
@@ -88,6 +92,15 @@ static void obtain_time() {
     ESP_LOGI(TAG, "Time obtained.");
 }
 
+static void getWifiTime() {
+    bool wifi_ok = connect_wifi();
+    if (wifi_ok) {
+        obtain_time();
+        esp_wifi_stop();
+    }
+    ESP_LOGI(TAG, "Current time resync: %s", asctime(localtime(&(time_t){time(NULL)})));
+}
+
 static void blink_led(int times, int delay_ms) {
     gpio_set_direction(CONFIG_LED_GPIO, GPIO_MODE_OUTPUT);
     for (int i = 1; i <= times; ++i) {
@@ -99,7 +112,7 @@ static void blink_led(int times, int delay_ms) {
             vTaskDelay(2 * delay_ms / portTICK_PERIOD_MS); // blank blink after every 3 blinks
         }
     }
-    ESP_LOGI(TAG, "                             LED blinked %d times with %d ms delay", times, delay_ms);
+    ESP_LOGI(TAG, "                  LED blinked %d times with %d ms delay", times, delay_ms);
 }
 
 void between_blinks_delay() {
@@ -110,15 +123,26 @@ void between_blinks_delay() {
 void chimesTimes(int hour, int minute) {
     // This function handles the chime logic based on the current time
     if (minute % 15 == 0) {
-        blink_led(1, CONFIG_QUARTER_HOUR_BLINK_DELAY);  // Quarter-hour chime
+        #if CONFIG_CHIME_MODE_ALL
+            blink_led(1, CONFIG_QUARTER_HOUR_BLINK_DELAY);  // Quarter-hour chime
+        #endif
+        sleep_duration = 60 * 13;    // Set sleep duration to 13 minutes after chime
+        // ESP_LOGI(TAG, "Chime at %02d:%02d", hour, minute);
     }
     between_blinks_delay();
-    if (minute == 0) {
-        // Noon chime - slower, more distine. Hourly blink - faster
-        int count = (hour == 12) ? 12 : ((hour % 24 == 0) ? 24 : hour % 24);
-        int delay = (hour == 12) ? CONFIG_NOON_BLINK_DELAY : CONFIG_HOURLY_BLINK_DELAY;
-        blink_led(count, delay);
-    }
+    #if CONFIG_CHIME_MODE_ALL || CONFIG_CHIME_MODE_HOURLY
+        if (minute == 0) {
+            // Noon chime - slower, more distine. Hourly blink - faster
+            int count = (hour == 12) ? 12 : ((hour % 24 == 0) ? 24 : hour % 24);
+            int delay = (hour == 12) ? CONFIG_NOON_BLINK_DELAY : CONFIG_HOURLY_BLINK_DELAY;
+            blink_led(count, delay);
+        }
+    #endif
+    #if CONFIG_CHIME_MODE_NOON_ONLY
+        if (hour == 12 && minute == 0) {
+            blink_led(12, CONFIG_NOON_BLINK_DELAY); // Noon chime
+        }
+    #endif
 }
 
 // This function is only for testing purposes
@@ -167,35 +191,34 @@ void app_main() {
     #endif
 
     wake_count++;
+    sleep_duration = 60; // Reset sleep duration for next wake
 
     esp_sleep_wakeup_cause_t wake_cause = esp_sleep_get_wakeup_cause();
     // Only run LED test and Wi-Fi setup on first boot (not from deep sleep)
     if (wake_cause == ESP_SLEEP_WAKEUP_UNDEFINED) {
         ESP_LOGI(TAG, "First boot or reset detected. Running initial setup.");
         blink_led(2, 200);  // two short blinks to confirm startup
+        getWifiTime();
     } else {
-        ESP_LOGI(TAG, "Woken up from deep sleep. Wake cause: %d, Wake count: %d", wake_cause, wake_count);
-    }
-
-    if (wake_count % CONFIG_WAKE_COUNT_TO_RESYNC == 0 || !esp_sleep_get_wakeup_cause()) {
-        bool wifi_ok = connect_wifi();
-        if (wifi_ok) {
-            obtain_time();
-            esp_wifi_stop();
-        }
-        ESP_LOGI(TAG, "Current time resync: %s", asctime(localtime(&(time_t){time(NULL)})));
+        ESP_LOGI(TAG, "Woken up from deep sleep. Wake cause: %d, Wake count: %d",
+             wake_cause, wake_count);
     }
 
     time_t now;
     struct tm timeinfo;
     time(&now);
     localtime_r(&now, &timeinfo);
+    ESP_LOGI(TAG, "Current time: %s", asctime(&timeinfo));
 
     chimesTimes(timeinfo.tm_hour, timeinfo.tm_min);
 
+    if (wake_count % CONFIG_WAKE_COUNT_TO_RESYNC == 0) {
+        getWifiTime(); // This resync costs at least 8sec
+    }
+
     #if !TEST_MODE
-        ESP_LOGI(TAG, "Sleeping...");
-        esp_sleep_enable_timer_wakeup(60 * 1000000ULL);
+        ESP_LOGI(TAG, "Sleeping... Will wake up after %d seconds", sleep_duration);
+        esp_sleep_enable_timer_wakeup(sleep_duration * 1000000ULL);
         esp_deep_sleep_start();
     #endif
 }
