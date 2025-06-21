@@ -85,6 +85,7 @@ static void obtain_time() {
 
     while (timeinfo.tm_year < (2020 - 1900)) {
         ESP_LOGI(TAG, "Waiting for time...");
+        blink_led(1, 100); // blink while waiting 
         time(&now);
         localtime_r(&now, &timeinfo);
         vTaskDelay(2000 / portTICK_PERIOD_MS);
@@ -199,6 +200,7 @@ void app_main() {
         ESP_LOGI(TAG, "First boot or reset detected. Running initial setup.");
         blink_led(2, 200);  // two short blinks to confirm startup
         getWifiTime();
+	ESP_LOGI(TAG, "https://github.com/43525/esp32LedClock");
     } else {
         ESP_LOGI(TAG, "Woken up from deep sleep. Wake cause: %d, Wake count: %d",
              wake_cause, wake_count);
@@ -208,7 +210,7 @@ void app_main() {
     struct tm timeinfo;
     time(&now);
     localtime_r(&now, &timeinfo);
-    ESP_LOGI(TAG, "Current time: %s", asctime(&timeinfo));
+    //ESP_LOGI(TAG, "Current time: %s", asctime(&timeinfo));
 
     chimesTimes(timeinfo.tm_hour, timeinfo.tm_min);
 

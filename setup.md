@@ -100,3 +100,54 @@ To update Wi-Fi SSID and password:
 Make changes under **ESP32 LED CLOCK Configuration**.
 
 ---
+### Sample Monitoring, `ESP_LOGI` `MAIN`
+``` nginx
+pi@raspberrypi:~/esp32LedClock $ . $HOME/esp/v5.3.3/esp-idf/export.sh
+...
+pi@raspberrypi:~/esp32LedClock $ idf.py build flash
+...
+pi@raspberrypi:~/esp32LedClock $ idf.py monitor
+...
+I (538) main_task: Started on CPU0
+I (548) main_task: Calling app_main()
+I (568) MAIN: First boot or reset detected. Running initial setup.
+I (1368) MAIN:                   LED blinked 2 times with 200 ms delay
+...
+I (1538) wifi:mode : sta (ec:e3:34:bf:c4:d8)
+I (1548) wifi:enable tsf
+I (1548) MAIN: Connecting to Wi-Fi...
+...
+I (6548) MAIN: Connected to WiFi
+I (6548) MAIN: Waiting for time...
+I (6748) MAIN:                   LED blinked 1 times with 100 ms delay
+I (8748) MAIN: Waiting for time...
+I (8948) MAIN:                   LED blinked 1 times with 100 ms delay
+I (10248) wifi:<ba-add>idx:1 (ifx:0, 5e:ef:68:30:2c:b9), tid:0, ssn:0, winSize:64
+I (10948) MAIN: Waiting for time...
+I (11148) MAIN:                   LED blinked 1 times with 100 ms delay
+I (13148) MAIN: Time obtained.
+...
+I (13198) MAIN: Current time resync: Sat Jun 21 13:54:24 2025
+
+I (13198) MAIN: https://github.com/43525/esp32LedClock
+I (13698) MAIN: Sleeping... Will wake up after 60 seconds
+ets Jul 29 2019 12:21:46
+
+rst:0x5 (DEEPSLEEP_RESET),boot:0x13 (SPI_FAST_FLASH_BOOT)
+...
+I (537) main_task: Started on CPU0
+I (547) main_task: Calling app_main()
+I (567) MAIN: Woken up from deep sleep. Wake cause: 4, Wake count: 2
+I (1067) MAIN: Sleeping... Will wake up after 60 seconds
+...
+...
+I (537) main_task: Started on CPU0
+I (547) main_task: Calling app_main()
+I (567) MAIN: Woken up from deep sleep. Wake cause: 4, Wake count: 7
+I (1167) MAIN:                   LED blinked 1 times with 300 ms delay
+I (5267) MAIN:                   LED blinked 14 times with 100 ms delay
+I (5267) MAIN: Sleeping... Will wake up after 780 seconds
+...
+```
+
+---
