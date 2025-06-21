@@ -14,8 +14,8 @@ This project implements an ESP32-based clock that connects to Wi-Fi, obtains the
   - At the top of the hour, blinks a number of times corresponding to the current hour (e.g., 12 blinks at noon).
   - The noon chime blinks more slowly than regular hourly blinks.
 - The device enters deep sleep and wakes:
-  - Every 780 seconds after a quarter-hour chime.
-  - Then every 60 seconds for normal checks.
+  - Every 840 seconds after a quarter-hour chime.
+  - Then 60 seconds for normal checks.
 
 ---
 

@@ -146,7 +146,7 @@ I (547) main_task: Calling app_main()
 I (567) MAIN: Woken up from deep sleep. Wake cause: 4, Wake count: 7
 I (1167) MAIN:                   LED blinked 1 times with 300 ms delay
 I (5267) MAIN:                   LED blinked 14 times with 100 ms delay
-I (5267) MAIN: Sleeping... Will wake up after 780 seconds
+I (5267) MAIN: Sleeping... Will wake up after 840 seconds
 ...
 ```
 

@@ -127,7 +127,7 @@ void chimesTimes(int hour, int minute) {
         #if CONFIG_CHIME_MODE_ALL
             blink_led(1, CONFIG_QUARTER_HOUR_BLINK_DELAY);  // Quarter-hour chime
         #endif
-        sleep_duration = 60 * 13;    // Set sleep duration to 13 minutes after chime
+        sleep_duration = 60 * 14;    // Set sleep duration to 14 minutes after chime
         // ESP_LOGI(TAG, "Chime at %02d:%02d", hour, minute);
     }
     between_blinks_delay();
