@@ -33,7 +33,7 @@ config NOON_BLINK_DELAY
 
 config WAKE_COUNT_TO_RESYNC
     int "Wake Count to Resync with NTP Server"
-    range 0 100
+    range 0 100000
     default 24
     help
       Number of times the device wakes up to resync with the NTP server.
